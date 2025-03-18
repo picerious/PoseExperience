@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POSE - Photo Booth Experience</title>
+    <style>
+        :root {
+            --primary-brown: #8B4513;
+            --light-brown: #DEB887;
+            --cream: #FDFBF7;
+            --dark-brown: #5C3317;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: var(--cream);
+            color: var(--dark-brown);
+            min-height: 100vh;
+        }
+
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 4rem;
+            color: var(--primary-brown);
+            margin-bottom: 2rem;
+        }
+
+        .start-btn {
+            background-color: var(--primary-brown);
+            color: white;
+            padding: 1.5rem 3rem;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.2);
+        }
+
+        .start-btn:hover {
+            background-color: var(--dark-brown);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+        }
+
+        .mode-selection {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--cream);
+            z-index: 1000;
+        }
+
+        .mode-selection h2 {
+            font-size: 3rem;
+            color: var(--primary-brown);
+            margin-bottom: 3rem;
+        }
+
+        .mode-cards {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 0;
+        }
+
+        .mode-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 2.5rem;
+            width: 300px;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .mode-card h3 {
+            font-size: 1.8rem;
+            color: var(--primary-brown);
+            margin-bottom: 1rem;
+        }
+
+        .mode-card p {
+            font-size: 1.2rem;
+            color: var(--dark-brown);
+            line-height: 1.5;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 6px 25px rgba(139, 69, 19, 0.2);
+        }
+
+        /* Photo booth styles */
+        .photo-booth {
+            margin: 0;
+            padding: 0;
+        }
+
+        .camera-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            margin: 0;
+            background: black;
+            z-index: 1000;
+            display: none;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .captured-photos {
+            display: none;
+        }
+
+        #startButton {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            padding: 1.5rem 3rem;
+            font-size: 1.5rem;
+            background-color: var(--primary-brown);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.2);
+        }
+
+        #startButton:hover {
+            background-color: var(--dark-brown);
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+        }
+
+        #countdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 200px;
+            font-weight: bold;
+            color: #FFFFFF;
+            display: none;
+            z-index: 1002;
+            text-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        #modeTitle {
+            display: none;
+        }
+
+        .pose-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .fade-out {
+            opacity: 0 !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Landing Page -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <h1>Welcome to POSE</h1>
+        <button class="start-btn" onclick="showModeSelection()">
+            Start Session
+        </button>
+    </div>
+
+    <!-- Mode Selection Page -->
+    <div class="mode-selection hidden" id="modeSelection">
+        <h2>Choose Your Mode</h2>
+        <div class="mode-cards">
+            <div class="mode-card" onclick="selectMode('guided')">
+                <h3>Guided Poses</h3>
+                <p>Pre-set poses for confidence in front of the camera</p>
+            </div>
+            <div class="mode-card" onclick="selectMode('freestyle')">
+                <h3>Freestyle Mode</h3>
+                <p>Encourages creativity with custom poses</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Booth Section -->
+    <div class="photo-booth hidden" id="photoBoothSection">
+        <h2 id="modeTitle">Photo Booth</h2>
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <img id="pose-guide" class="pose-guide hidden" src="" alt="Pose guide">
+            <div id="countdown"></div>
+        </div>
+        <canvas id="canvas"></canvas>
+        <button id="startButton">Start Session</button>
+        <div class="captured-photos" id="capturedPhotos"></div>
+    </div>
+
+    <script>
+        let currentMode = '';
+        let photoCount = 0;
+        const MAX_PHOTOS = 8;
+        let stream = null;
+        let capturedPhotos = [];
+        
+        // Array of pose guide images for guided mode
+        const poseGuides = [
+            'poses/pose1.png',
+            'poses/pose2.png',
+            'poses/pose3.png',
+            'poses/pose4.png',
+            'poses/pose5.png',
+            'poses/pose6.png',
+            'poses/pose7.png',
+            'poses/pose8.png'
+        ];
+
+        function showModeSelection() {
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('modeSelection').classList.remove('hidden');
+        }
+
+        function selectMode(mode) {
+            currentMode = mode;
+            document.getElementById('modeSelection').classList.add('hidden');
+            document.getElementById('photoBoothSection').classList.remove('hidden');
+            document.querySelector('.camera-container').style.display = 'block';
+            initializeCamera();
+        }
+
+        async function initializeCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+                document.getElementById('video').srcObject = stream;
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                alert("Error accessing camera. Please make sure you have granted camera permissions.");
+            }
+        }
+
+        function startPhotoSession() {
+            document.getElementById('startButton').style.display = 'none';
+            startCountdown();
+        }
+
+        function startCountdown() {
+            let count = 1;
+            const countdown = document.getElementById('countdown');
+            countdown.style.display = 'block';
+            
+            const countInterval = setInterval(() => {
+                if (count > 0) {
+                    countdown.textContent = count;
+                    count--;
+                } else {
+                    clearInterval(countInterval);
+                    countdown.style.display = 'none';
+                    capturePhoto();
+                }
+            }, 1000);
+        }
+
+        function capturePhoto() {
+            try {
+                const video = document.getElementById('video');
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const photoData = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Verify the photo data is valid
+                if (!photoData.startsWith('data:image/jpeg;base64,')) {
+                    throw new Error('Invalid photo data captured');
+                }
+                
+                capturedPhotos.push(photoData);
+                photoCount++;
+
+                if (photoCount < MAX_PHOTOS) {
+                    // Add a small delay before next photo
+                    setTimeout(startCountdown, 1500);
+                } else {
+                    finishSession();
+                }
+            } catch (error) {
+                console.error('Error capturing photo:', error);
+                alert('There was an error capturing your photo. Please try again.');
+                // Reset the session
+                localStorage.removeItem('capturedPhotos');
+                localStorage.removeItem('selectedPhotos');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function finishSession() {
+            try {
+                // Stop the camera stream first
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+
+                // Verify we have the correct number of photos
+                if (capturedPhotos.length !== MAX_PHOTOS) {
+                    throw new Error('Incorrect number of photos captured');
+                }
+
+                // Clear any existing photos in localStorage first
+                localStorage.removeItem('capturedPhotos');
+                localStorage.removeItem('selectedPhotos');
+                localStorage.removeItem('finalLayout');
+
+                // Save photos to localStorage
+                localStorage.setItem('capturedPhotos', JSON.stringify(capturedPhotos));
+                
+                // Verify the photos were saved
+                const savedPhotos = JSON.parse(localStorage.getItem('capturedPhotos'));
+                if (!savedPhotos || savedPhotos.length !== MAX_PHOTOS) {
+                    throw new Error('Failed to save photos properly');
+                }
+                
+                // Verify each photo is valid
+                if (!savedPhotos.every(photo => photo.startsWith('data:image/jpeg;base64,'))) {
+                    throw new Error('Invalid photo format detected');
+                }
+
+                // Show loading message
+                const countdown = document.getElementById('countdown');
+                countdown.style.display = 'block';
+                countdown.textContent = 'Saving photos...';
+                countdown.style.fontSize = '48px';
+                
+                // Add a delay to ensure everything is saved
+                setTimeout(() => {
+                    window.location.href = 'photo-selection.html';
+                }, 1000);
+            } catch (error) {
+                console.error('Error finishing session:', error);
+                alert('There was an error saving your photos. Please try again.');
+                // Reset the session
+                localStorage.removeItem('capturedPhotos');
+                localStorage.removeItem('selectedPhotos');
+                localStorage.removeItem('finalLayout');
+                window.location.href = 'index.html';
+            }
+        }
+
+        document.getElementById('startButton').addEventListener('click', startPhotoSession);
+    </script>
+</body>
+</html> 

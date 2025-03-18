@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POSE - Processing</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #8B4513;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+
+        .loading-text {
+            font-size: 1.5rem;
+            color: #666;
+            margin-bottom: 30px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .qr-section {
+            margin-top: 30px;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .scan-text {
+            font-size: 3rem;
+            color: #8B4513;
+            margin-bottom: 20px;
+            font-weight: bold;
+            animation: fadeInOut 2s infinite;
+        }
+
+        #qrCode {
+            margin: 0 auto;
+            width: 400px;
+            height: 400px;
+        }
+
+        #experienceButton {
+            display: none;
+            background-color: #8B4513;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 2rem;
+            border-radius: 35px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+            opacity: 0;
+            transform: scale(0.9);
+            animation: fadeInScale 0.5s ease-out forwards;
+        }
+
+        #experienceButton:hover {
+            background-color: #6b340f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+    <!-- Add QR Code library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 id="mainTitle">Processing Your Photos</h1>
+        <div class="loading-text">Please wait while we process your photos...</div>
+        
+        <div class="qr-section" id="qrSection">
+            <div class="scan-text">SCAN ME</div>
+            <div id="qrCode"></div>
+        </div>
+        <button id="experienceButton" onclick="returnToHome()">New Booth Experience</button>
+    </div>
+
+    <script>
+        // Create the GitHub Pages URL for the download page
+        const vercelUrl = 'https://yourusername.github.io/photo-booth-app/download.html';
+        
+        // Function to generate QR code
+        function generateQRCode(url) {
+            const qr = qrcode(0, 'M');
+            qr.addData(url);
+            qr.make();
+            document.getElementById('qrCode').innerHTML = qr.createImgTag(10);
+        }
+
+        // Function to return to home
+        function returnToHome() {
+            window.location.href = 'index.html';
+        }
+
+        // Function to handle download
+        function handleDownload() {
+            const savedLayout = localStorage.getItem('finalLayout');
+            if (savedLayout) {
+                const link = document.createElement('a');
+                link.href = savedLayout;
+                link.download = 'POSE_layout.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // Show QR code after 10 seconds
+        setTimeout(() => {
+            document.getElementById('mainTitle').style.display = 'none';
+            document.querySelector('.loading-text').style.display = 'none';
+            document.getElementById('qrSection').style.display = 'block';
+            document.getElementById('qrSection').style.opacity = '1';
+            generateQRCode(vercelUrl);
+            handleDownload();
+        }, 10000);
+
+        // Hide QR code and show experience button after 15 seconds
+        setTimeout(() => {
+            document.getElementById('qrSection').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('qrSection').style.display = 'none';
+                document.getElementById('experienceButton').style.display = 'block';
+            }, 500);
+        }, 15000);
+    </script>
+</body>
+</html> 

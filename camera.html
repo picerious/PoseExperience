@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Booth Camera</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #8B4513;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #camera {
+            width: 800px;
+            height: 600px;
+            margin: 20px auto;
+            background-color: #000;
+        }
+
+        #preview {
+            width: 800px;
+            height: 600px;
+            margin: 20px auto;
+            background-color: #000;
+            display: none;
+        }
+
+        #preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 20px;
+            margin: 20px;
+        }
+
+        button {
+            padding: 20px 40px;
+            font-size: 24px;
+            background-color: white;
+            color: #8B4513;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #startButton {
+            display: block;
+        }
+
+        #retakeButton, #confirmButton {
+            display: none;
+        }
+
+        #countdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            color: white;
+            display: none;
+            z-index: 100;
+        }
+
+        #photoCounter {
+            font-size: 24px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="camera"></div>
+    <div id="preview"></div>
+    <div id="photoCounter">Photo 1 of 8</div>
+    <button id="startButton">Start Session</button>
+    <div class="button-container">
+        <button id="retakeButton">Retake Photo</button>
+        <button id="confirmButton">Confirm Photo</button>
+    </div>
+    <div id="countdown"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.min.js"></script>
+    <script>
+        window.onload = function() {
+            // Get the selected mode
+            const mode = localStorage.getItem('selectedMode');
+            if (!mode) {
+                alert('No mode selected. Please start from the beginning.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Initialize webcam
+            Webcam.set({
+                width: 800,
+                height: 600,
+                image_format: 'jpeg',
+                jpeg_quality: 90
+            });
+            Webcam.attach('#camera');
+        }
+
+        const startButton = document.getElementById('startButton');
+        const retakeButton = document.getElementById('retakeButton');
+        const confirmButton = document.getElementById('confirmButton');
+        const countdown = document.getElementById('countdown');
+        const preview = document.getElementById('preview');
+        const camera = document.getElementById('camera');
+        const photoCounter = document.getElementById('photoCounter');
+        
+        let photoCount = 0;
+        let photos = [];
+        let currentPhoto = null;
+
+        startButton.addEventListener('click', function() {
+            startButton.style.display = 'none';
+            startCountdown();
+        });
+
+        retakeButton.addEventListener('click', function() {
+            preview.style.display = 'none';
+            camera.style.display = 'block';
+            retakeButton.style.display = 'none';
+            confirmButton.style.display = 'none';
+            startCountdown();
+        });
+
+        confirmButton.addEventListener('click', function() {
+            photos.push(currentPhoto);
+            photoCount++;
+            photoCounter.textContent = `Photo ${photoCount + 1} of 8`;
+            
+            if (photoCount < 8) {
+                preview.style.display = 'none';
+                camera.style.display = 'block';
+                retakeButton.style.display = 'none';
+                confirmButton.style.display = 'none';
+                startCountdown();
+            } else {
+                try {
+                    // Save photos to localStorage
+                    localStorage.setItem('capturedPhotos', JSON.stringify(photos));
+                    
+                    // Verify the photos were saved
+                    const savedPhotos = JSON.parse(localStorage.getItem('capturedPhotos'));
+                    if (!savedPhotos || savedPhotos.length !== 8) {
+                        throw new Error('Failed to save photos properly');
+                    }
+                    
+                    // Clear the mode selection since we're done with it
+                    localStorage.removeItem('selectedMode');
+                    
+                    // Navigate to photo selection
+                    window.location.href = 'photo-selection.html';
+                } catch (error) {
+                    console.error('Error saving photos:', error);
+                    alert('There was an error saving your photos. Please try again.');
+                    // Reset the session
+                    localStorage.removeItem('capturedPhotos');
+                    localStorage.removeItem('selectedMode');
+                    window.location.href = 'index.html';
+                }
+            }
+        });
+
+        function startCountdown() {
+            let count = 3;
+            countdown.style.display = 'block';
+            
+            const timer = setInterval(() => {
+                countdown.textContent = count;
+                if (count <= 0) {
+                    clearInterval(timer);
+                    countdown.style.display = 'none';
+                    takePhoto();
+                }
+                count--;
+            }, 1000);
+        }
+
+        function takePhoto() {
+            Webcam.snap(function(data_uri) {
+                currentPhoto = data_uri;
+                preview.innerHTML = `<img src="${data_uri}">`;
+                preview.style.display = 'block';
+                camera.style.display = 'none';
+                retakeButton.style.display = 'block';
+                confirmButton.style.display = 'block';
+            });
+        }
+    </script>
+</body>
+</html> 

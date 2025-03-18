@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POSE - Select Photos</title>
+    <style>
+        :root {
+            --primary-brown: #8B4513;
+            --light-brown: #DEB887;
+            --cream: #FDFBF7;
+            --dark-brown: #5C3317;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--cream);
+            color: var(--dark-brown);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-brown);
+            margin-bottom: 2rem;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .photo-item {
+            position: relative;
+            aspect-ratio: 3/4;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 3px solid transparent;
+        }
+
+        .photo-item.selected img {
+            border-color: var(--primary-brown);
+            transform: scale(1.05);
+        }
+
+        .selection-counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-brown);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+        }
+
+        .next-btn {
+            display: block;
+            margin: 2rem auto;
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            background-color: var(--primary-brown);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .next-btn:hover {
+            background-color: var(--dark-brown);
+        }
+
+        .next-btn:disabled {
+            background-color: var(--light-brown);
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select 4 Photos</h1>
+    <div class="selection-counter" id="selectionCounter">Selected: 0/4</div>
+    
+    <div class="photo-grid" id="photoGrid">
+        <!-- Photos will be loaded here -->
+    </div>
+
+    <button class="next-btn" onclick="proceedToLayout()" id="nextBtn" disabled>
+        Continue to Layout Selection
+    </button>
+
+    <script>
+        let selectedPhotos = new Set();
+        const REQUIRED_SELECTIONS = 4;
+
+        window.onload = function() {
+            try {
+                // Clear any previously selected photos
+                localStorage.removeItem('selectedPhotos');
+                
+                // Load photos from localStorage
+                const photos = JSON.parse(localStorage.getItem('capturedPhotos'));
+                
+                // Verify photos exist and are valid
+                if (!photos || !Array.isArray(photos) || photos.length !== 8) {
+                    throw new Error('Invalid or missing photos');
+                }
+                
+                // Verify all photos are valid data URIs
+                if (!photos.every(photo => photo.startsWith('data:image/jpeg;base64,'))) {
+                    throw new Error('Invalid photo format');
+                }
+                
+                // Reset selection state
+                selectedPhotos.clear();
+                updateSelectionCounter();
+                checkNextButton();
+                
+                // Display the photos
+                displayPhotos(photos);
+            } catch (error) {
+                console.error('Error loading photos:', error);
+                alert('There was an error loading your photos. Please take photos again.');
+                // Clear any invalid data
+                localStorage.removeItem('capturedPhotos');
+                localStorage.removeItem('selectedPhotos');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function displayPhotos(photos) {
+            const grid = document.getElementById('photoGrid');
+            photos.forEach((photoSrc, index) => {
+                const photoItem = document.createElement('div');
+                photoItem.className = 'photo-item';
+                photoItem.innerHTML = `<img src="${photoSrc}" data-index="${index}">`;
+                photoItem.onclick = () => togglePhotoSelection(photoItem);
+                grid.appendChild(photoItem);
+            });
+        }
+
+        function togglePhotoSelection(photoItem) {
+            const index = photoItem.querySelector('img').dataset.index;
+            
+            if (selectedPhotos.has(index)) {
+                selectedPhotos.delete(index);
+                photoItem.classList.remove('selected');
+            } else if (selectedPhotos.size < REQUIRED_SELECTIONS) {
+                selectedPhotos.add(index);
+                photoItem.classList.add('selected');
+            } else {
+                alert(`You can only select ${REQUIRED_SELECTIONS} photos`);
+                return;
+            }
+
+            updateSelectionCounter();
+            checkNextButton();
+        }
+
+        function updateSelectionCounter() {
+            document.getElementById('selectionCounter').textContent = 
+                `Selected: ${selectedPhotos.size}/4`;
+        }
+
+        function checkNextButton() {
+            document.getElementById('nextBtn').disabled = 
+                selectedPhotos.size !== REQUIRED_SELECTIONS;
+        }
+
+        function proceedToLayout() {
+            if (selectedPhotos.size !== REQUIRED_SELECTIONS) {
+                alert('Please select exactly 4 photos');
+                return;
+            }
+
+            try {
+                // Get the original photos from localStorage
+                const originalPhotos = JSON.parse(localStorage.getItem('capturedPhotos'));
+                if (!originalPhotos || !Array.isArray(originalPhotos)) {
+                    throw new Error('Original photos not found');
+                }
+
+                // Get the selected photos using the original data
+                const selectedPhotosList = Array.from(selectedPhotos).map(index => originalPhotos[index]);
+                
+                // Verify the selected photos
+                if (!selectedPhotosList.every(photo => photo && photo.startsWith('data:image/jpeg;base64,'))) {
+                    throw new Error('Invalid photo data');
+                }
+                
+                // Show loading message
+                const nextBtn = document.getElementById('nextBtn');
+                nextBtn.textContent = 'Loading...';
+                nextBtn.disabled = true;
+                
+                // Clear any existing selected photos
+                localStorage.removeItem('selectedPhotos');
+                
+                // Save selected photos to localStorage
+                localStorage.setItem('selectedPhotos', JSON.stringify(selectedPhotosList));
+                
+                // Verify the save was successful
+                const savedPhotos = localStorage.getItem('selectedPhotos');
+                if (!savedPhotos) {
+                    throw new Error('Failed to save selected photos');
+                }
+                
+                // Add a small delay to ensure storage is complete
+                setTimeout(() => {
+                    window.location.href = 'layout.html';
+                }, 500);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('There was an error loading your photos. Please try again.');
+                // Reset button state
+                const nextBtn = document.getElementById('nextBtn');
+                nextBtn.textContent = 'Continue to Layout Selection';
+                nextBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html> 
